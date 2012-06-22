@@ -1,6 +1,7 @@
 <?php
 
 namespace Kunstmaan\AdminNodeBundle\Entity;
+
 use Kunstmaan\AdminBundle\Entity\AbstractEntity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -10,7 +11,7 @@ use Kunstmaan\AdminNodeBundle\Form\NodeAdminType;
 
 /**
  * Node
- * 
+ *
  * @ORM\Entity(repositoryClass="Kunstmaan\AdminNodeBundle\Repository\NodeRepository")
  * @ORM\Table(name="node")
  * @ORM\HasLifecycleCallbacks()
@@ -133,7 +134,7 @@ class Node extends AbstractEntity
                     if ($includeoffline || $entry->isOnline()) {
                         return true;
                     }
-                    
+
                     return false;
                 });
     }
@@ -151,7 +152,7 @@ class Node extends AbstractEntity
                 return $nodeTranslation;
             }
         }
-        
+
         return null;
     }
 
@@ -312,7 +313,7 @@ class Node extends AbstractEntity
             }
         }
     }
-    
+
     public function __toString(){
         return "node ".$this->getId() . ", refEntityname: ". $this->getRefEntityname();
     }

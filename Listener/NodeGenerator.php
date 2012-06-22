@@ -57,27 +57,25 @@ class NodeGenerator {
     }
 
     public function postLoad(LifecycleEventArgs $args) {
-     	$entity = $args->getEntity();
+        return;
+     	/*$entity = $args->getEntity();
      	$em = $args->getEntityManager();
      	$classname = ClassLookup::getClass($entity);
      	if($entity instanceof HasNodeInterface){
-     		$nodeVersion = $em->getRepository('KunstmaanAdminNodeBundle:NodeVersion')->findOneBy(array('refId' => $entity->getId(), 'refEntityname' => $classname));
-     		if($nodeVersion){
-     			$nodeTranslation = $nodeVersion->getNodeTranslation();
-     			$node = $nodeTranslation->getNode();
-     			$parentNode = $node->getParent();
-     			if($parentNode){
-     				$parentNodeTranslation = $parentNode->getNodeTranslation($nodeTranslation->getLang());
-     				if($parentNodeTranslation){
-     					$parentNodeVersion = $parentNodeTranslation->getPublicNodeVersion();
-     					$parent = $em->getRepository($parentNode->getRefEntityname())->find($parentNodeVersion->getRefId());
-     					if($parent){
-     						$entity->setParent($parent);
-     					}
-     				}
-     			}
-     		}
-     	}
+     		$nodeTranslation = $em->getRepository('KunstmaanAdminNodeBundle:NodeTranslation')->getNodeTranslationFor($entity);
+ 			$node = $nodeTranslation->getNode();
+ 			$parentNode = $node->getParent();
+ 			if($parentNode){
+ 				$parentNodeTranslation = $parentNode->getNodeTranslation($nodeTranslation->getLang());
+ 				if($parentNodeTranslation){
+ 					$parentNodeVersion = $parentNodeTranslation->getPublicNodeVersion();
+ 					$parent = $em->getRepository($parentNode->getRefEntityname())->find($parentNodeVersion->getRefId());
+ 					if($parent){
+ 						$entity->setParent($parent);
+ 					}
+ 				}
+ 			}
+     	}*/
     }
 
 }

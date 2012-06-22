@@ -157,7 +157,7 @@ class PagesController extends Controller
     		$editpagepart = $request->get("edit");
     	}
 
-        $node = $em->getRepository('KunstmaanAdminNodeBundle:Node')->find($id);
+        $node = $em->getRepository('KunstmaanAdminNodeBundle:Node')->getNodeForId($id, $user, 'write', true);
 
         $guestGroup = $em->getRepository('KunstmaanAdminBundle:Group')->findOneByName('Guests');
         $guestPermission = $em->getRepository('KunstmaanAdminBundle:Permission')->findOneBy(array('refId' => $node->getId(), 'refEntityname' => ClassLookup::getClass($node), 'refGroup' => $guestGroup->getId()));
@@ -171,7 +171,7 @@ class PagesController extends Controller
         	$em->flush();
         }
 
-        $nodeTranslation = $node->getNodeTranslation($locale, true);
+        $nodeTranslation = $em->getRepository('KunstmaanAdminNodeBundle:NodeTranslation')->getFor($node, $locale, $user, 'write', true);
         if(!$nodeTranslation){
         	return $this->render('KunstmaanAdminNodeBundle:Pages:pagenottranslated.html.twig', array('node' => $node, 'nodeTranslations' => $node->getNodeTranslations(true), 'nodemenu' => new NodeMenu($this->container, $locale, $node, 'write', true, true)));
         }

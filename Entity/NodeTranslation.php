@@ -1,6 +1,7 @@
 <?php
 
 namespace Kunstmaan\AdminNodeBundle\Entity;
+
 use Kunstmaan\AdminBundle\Entity\AbstractEntity;
 
 use Kunstmaan\SearchBundle\Entity\IndexableInterface;
@@ -16,7 +17,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * NodeTranslation
- * 
+ *
  * @ORM\Entity(repositoryClass="Kunstmaan\AdminNodeBundle\Repository\NodeTranslationRepository")
  * @ORM\Table(name="nodetranslation")
  */
@@ -76,7 +77,7 @@ class NodeTranslation extends AbstractEntity
      * @ORM\Column(type="smallint", nullable=true)
      */
     protected $weight;
-    
+
     public function __construct()
     {
         $this->nodeVersions = new \Doctrine\Common\Collections\ArrayCollection();
@@ -383,12 +384,12 @@ class NodeTranslation extends AbstractEntity
     {
         return $this->url;
     }
-    
+
     public function setWeight($weight)
     {
         $this->weight = $weight;
     }
-    
+
     public function getWeight()
     {
         return $this->weight;

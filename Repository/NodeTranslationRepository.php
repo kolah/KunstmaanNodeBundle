@@ -2,6 +2,8 @@
 
 namespace Kunstmaan\AdminNodeBundle\Repository;
 
+use Doctrine\ORM\Query\ResultSetMappingBuilder;
+
 use Kunstmaan\AdminNodeBundle\Entity\HasNodeInterface;
 use Kunstmaan\AdminNodeBundle\Entity\Node;
 use Kunstmaan\AdminNodeBundle\Entity\NodeTranslation;
@@ -108,8 +110,8 @@ class NodeTranslationRepository extends EntityRepository
             $qb->andWhere('b.url = ?1');
             $qb->setParameter(1, $urlSlug);
         }
-        
-        $result = $qb->getQuery()->getResult();
+
+        $result = $qb->getQuery()->useResultCache(true, 3600)->getResult();
 
         if (sizeof($result) == 1) {
             return $result[0];
@@ -145,48 +147,31 @@ class NodeTranslationRepository extends EntityRepository
      */
     private function getNodeTranslationForSlugPart(NodeTranslation $parentNode = null, $slugpart = "")
     {
-    	if ($parentNode != null) {
-            $qb = $this->createQueryBuilder('b')
-                ->select('b')
-                ->innerJoin('b.node', 'n', 'WITH', 'b.node = n.id')
-                ->where('b.slug = ?1 and n.parent = ?2')
-                ->andWhere('n.deleted != 1')
-                ->addOrderBy('n.sequencenumber', 'DESC')
-                ->setFirstResult(0)
-                ->setMaxResults(1)
-                ->setParameter(1, $slugpart)
-                ->setParameter(2, $parentNode->getNode()->getId());
-            $result = $qb->getQuery()->getResult();
-            if (sizeof($result) == 1) {
-                return $result[0];
-            } else if (sizeof($result) == 0) {
-                return null;
-            } else {
-                return $result[0];
-            }
+        $qb = $this->createQueryBuilder('b')
+            ->select('b')
+            ->innerJoin('b.node', 'n', 'WITH', 'b.node = n.id')
+            ->where('n.deleted = 0');
+        if ($parentNode != null) {
+            $qb->andWhere('n.parent = :parent')->setParameter('parent', $parentNode->getNode()->getId());
         } else {
-        	/* if parent is null we should look for slugs that have no parent */
-	        $qb = $this->createQueryBuilder('t')
-	                ->select('t')
-	                ->innerJoin('t.node', 'n', 'WITH', 't.node = n.id')
-	                ->where('n.deleted != 1 and n.parent IS NULL')
-	                ->addOrderBy('n.sequencenumber', 'DESC')
-	                ->setFirstResult(0)
-	                ->setMaxResults(1);
-	        if (empty($slugpart)) {
-	        	$qb->andWhere('t.slug is NULL');
-	        } else {
-	        	$qb->andWhere('t.slug = ?1');
-	        	$qb->setParameter(1, $slugpart);
-	        }
-	        $result = $qb->getQuery()->getResult();
-	        if (sizeof($result) == 1) {
-	        	return $result[0];
-	        } else if (sizeof($result) == 0) {
-	            return null;
-	        } else {
-	            return $result[0];
-	        }
+            $qb->andWhere('n.parent is NULL');
+            if (empty($slugpart)) {
+                $qb->andWhere('t.slug is NULL');
+            } else {
+                $qb->andWhere('t.slug = ?1');
+                $qb->setParameter(1, $slugpart);
+            }
+        }
+        $qb->addOrderBy('n.sequencenumber', 'DESC')
+            ->setFirstResult(0)
+            ->setMaxResults(1);
+        $result = $qb->getQuery()->useResultCache(true, 3600)->getResult();
+        if (sizeof($result) == 1) {
+            return $result[0];
+        } else if (sizeof($result) == 0) {
+            return null;
+        } else {
+            return $result[0];
         }
     }
 
@@ -224,7 +209,7 @@ class NodeTranslationRepository extends EntityRepository
         $em->flush();
         $em->refresh($nodeTranslation);
         $em->refresh($node);
-        
+
         return $nodeTranslation;
     }
 
@@ -240,17 +225,8 @@ class NodeTranslationRepository extends EntityRepository
     {
         $em = $this->getEntityManager();
 
-        $rsm = new ResultSetMapping();
-        $rsm->addEntityResult('Kunstmaan\AdminNodeBundle\Entity\NodeTranslation', 'nt');
-        $rsm->addFieldResult('nt', 'id', 'id');
-        $rsm->addMetaResult('nt', 'node', 'node');
-        $rsm->addFieldResult('nt', 'lang', 'lang');
-        $rsm->addFieldResult('nt', 'online', 'online');
-        $rsm->addFieldResult('nt', 'title', 'title');
-        $rsm->addFieldResult('nt', 'slug', 'slug');
-        $rsm->addFieldResult('nt', 'url', 'url');
-        $rsm->addMetaResult('nt', 'publicNodeVersion', 'publicNodeVersion');
-        $rsm->addMetaResult('nt', 'seo', 'seo');
+        $rsm = new ResultSetMappingBuilder($em);
+        $rsm->addRootEntityFromClassMetadata('Kunstmaan\AdminNodeBundle\Entity\NodeTranslation', 'nt');
 
         $query = $em
             ->createNativeQuery(
@@ -264,4 +240,41 @@ class NodeTranslationRepository extends EntityRepository
 
         return $translation;
     }
+
+    public function getFor(Node $node, $lang, $user, $permission, $includehiddenfromnav = false)
+	{
+	    $qb = $this->createQueryBuilder('t')
+	       ->select('t')
+	       ->innerJoin("t.node", "b")
+	       ->where('b.deleted = 0')
+	       ->andWhere("t.node = :node")->setParameter("node", $node->getId());
+
+        if (!$includehiddenfromnav) {
+	        $qb->andWhere('b.hiddenfromnav != true');
+	    }
+
+	    $qb->andWhere('t.id IN (
+	            SELECT p.refId FROM Kunstmaan\AdminBundle\Entity\Permission p WHERE p.refEntityname = ?1 AND p.permissions LIKE ?2 AND p.refGroup IN(?3)
+	    )')
+	       ->andWhere("t.lang = :lang");
+
+	    $qb->addOrderBy('t.weight', 'ASC')
+           ->addOrderBy('t.title', 'ASC')
+	       ->setParameter(1, 'Kunstmaan\\AdminNodeBundle\\Entity\\Node')
+	       ->setParameter(2, '%|'.$permission.':1|%');
+
+	    $groupIds = $user->getGroupIds();
+	    if (!empty($groupIds)) {
+	        $qb->setParameter(3, $groupIds);
+	    } else {
+	        $qb->setParameter(3, null);
+	    }
+	    $qb->setParameter("lang", $lang);
+        $query = $qb->getQuery();
+        $cachekey = "nodetranslation_list_getFor_".serialize($qb->getParameters());
+        $query->useResultCache(true, 3600, $cachekey);
+	    $result = $query->getOneOrNullResult();
+
+	    return $result;
+	}
 }

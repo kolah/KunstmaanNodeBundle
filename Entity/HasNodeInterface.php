@@ -24,21 +24,11 @@ interface HasNodeInterface
      * @return string
      */
     public function getPageTitle();
-    
+
     /**
      * @return boolean
      */
     public function isOnline();
-
-    /**
-     * @return HasNodeInterface
-     */
-    public function getParent();
-
-    /**
-     * @param HasNodeInterface $hasNode
-     */
-    public function setParent(HasNodeInterface $hasNode);
 
     /**
      * Return an array containing all possible permissions for the page

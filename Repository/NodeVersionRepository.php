@@ -56,11 +56,48 @@ class NodeVersionRepository extends EntityRepository
 		$nodeVersion->setOwner($owner);
 		$nodeVersion->setRefId($hasNode->getId());
 		$nodeVersion->setRefEntityname($classname);
-		
+
 		$addcommand = new AddCommand($em, $owner);
 		$addcommand->execute("new version for page \"". $nodeTranslation->getTitle() ."\" with locale: " . $nodeTranslation->getLang(), array('entity'=> $nodeVersion));
-		
+
 		$em->refresh($nodeVersion);
+
 		return $nodeVersion;
+	}
+
+	public function getFor(Node $node, $lang, $user, $permission, $includehiddenfromnav = false)
+	{
+	    $qb = $this->createQueryBuilder('t')
+	    ->select('t')
+	    ->innerJoin("t.node", "b")
+	    ->where('b.deleted = 0')
+	    ->andWhere("t.node = :node")->setParameter("node", $node->getId());
+
+	    if (!$includehiddenfromnav) {
+	        $qb->andWhere('b.hiddenfromnav != true');
+	    }
+
+	    $qb->andWhere('t.id IN (
+	            SELECT p.refId FROM Kunstmaan\AdminBundle\Entity\Permission p WHERE p.refEntityname = ?1 AND p.permissions LIKE ?2 AND p.refGroup IN(?3)
+	    )')
+	    ->andWhere("t.lang = :lang");
+
+	    $qb->addOrderBy('t.weight', 'ASC')
+	    ->addOrderBy('t.title', 'ASC')
+	    ->setParameter(1, 'Kunstmaan\\AdminNodeBundle\\Entity\\Node')
+	    ->setParameter(2, '%|'.$permission.':1|%');
+
+	    $groupIds = $user->getGroupIds();
+	    if (!empty($groupIds)) {
+	        $qb->setParameter(3, $groupIds);
+	    } else {
+	        $qb->setParameter(3, null);
+	    }
+	    $qb->setParameter("lang", $lang);
+	    $query = $qb->getQuery();
+	    $query->useResultCache(true, 3600);
+	    $result = $query->getOneOrNullResult();
+
+	    return $result;
 	}
 }

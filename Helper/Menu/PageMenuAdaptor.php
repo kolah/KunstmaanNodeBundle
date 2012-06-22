@@ -40,10 +40,17 @@ class PageMenuAdaptor implements MenuAdaptorInterface
      */
     public function adaptChildren(MenuBuilder $menu, array &$children, MenuItem $parent = null, Request $request = null)
     {
+        $em = $this->container->get("doctrine")->getEntityManager();
+        // get the current user
+        $permissionManager = $this->container->get('kunstmaan_admin.permissionmanager');
+        $securityContext = $this->container->get('security.context');
+        $user = $securityContext->getToken()->getUser();
+        $user = $permissionManager->getCurrentUser($user, $em);
+
         if (is_null($this->nodemenu)) {
             $node = null;
             if ($request->attributes->get('_route') == 'KunstmaanAdminNodeBundle_pages_edit') {
-                $node = $this->container->get("doctrine")->getEntityManager()->getRepository('KunstmaanAdminNodeBundle:Node')->findOneById($request->attributes->get('id'));
+                $node = $em->getRepository('KunstmaanAdminNodeBundle:Node')->getNodeForId($request->attributes->get('id'), $user, 'write', true);
             }
             $this->nodemenu = new NodeMenu($this->container, $request->getSession()->getLocale(), $node, 'write', true, true);
         }
@@ -56,15 +63,15 @@ class PageMenuAdaptor implements MenuAdaptorInterface
                 $menuitem->setActive(true);
             }
             $children[] = $menuitem;
-            
-            
+
+
         } else if ('KunstmaanAdminNodeBundle_pages' == $parent->getRoute()) {
             $topnodes = $this->nodemenu->getTopNodes();
-            
+
             $currentId = $request->attributes->get('id');
             if (isset($currentId)) {
-                $currentNode = $this->container->get("doctrine")->getEntityManager()->getRepository('KunstmaanAdminNodeBundle:Node')->findOneById($currentId);
-                if(!is_null($currentNode)) {
+                $currentNode = $em->getRepository('KunstmaanAdminNodeBundle:Node')->getNodeForId($currentId, $user, 'write', true);
+                if (!is_null($currentNode)) {
                     $parentNodes = $currentNode->getParents();
                 } else {
                     $parentNodes = array();
@@ -79,7 +86,7 @@ class PageMenuAdaptor implements MenuAdaptorInterface
                 $menuitem->setParent($parent);
                 $menuitem->setRole('page');
                 $menuitem->setWeight($child->getNodeTranslation()->getWeight());
-                
+
                 if (isset($currentNode) && stripos($request->attributes->get('_route'), $menuitem->getRoute()) === 0) {
                     if ($currentNode->getId() == $child->getId()) {
                         $menuitem->setActive(true);
@@ -92,22 +99,22 @@ class PageMenuAdaptor implements MenuAdaptorInterface
                         }
                     }
                 }
-                 
+
                 $children[] = $menuitem;
             }
-            
-         
+
+
         } else if ('KunstmaanAdminNodeBundle_pages_edit' == $parent->getRoute()) {
             $parentRouteParams = $parent->getRouteparams();
-            $node = $this->container->get("doctrine")->getEntityManager()->getRepository('KunstmaanAdminNodeBundle:Node')->findOneById($parentRouteParams['id']);
+            $node = $this->container->get("doctrine")->getEntityManager()->getRepository('KunstmaanAdminNodeBundle:Node')->getNodeForId($parentRouteParams['id'], $user, 'write', true);
             $nodemenu = new NodeMenu($this->container, $request->getSession()->getLocale(), $node, 'write', true, true);
-            
+
             $childNodes = $nodemenu->getCurrent()->getChildren();
 
             $currentId = $request->attributes->get('id');
             if (isset($currentId)) {
-                $currentNode = $this->container->get("doctrine")->getEntityManager()->getRepository('KunstmaanAdminNodeBundle:Node')->findOneById($currentId);
-                if(!is_null($currentNode)) {
+                $currentNode = $em->getRepository('KunstmaanAdminNodeBundle:Node')->getNodeForId($currentId, $user, 'write', true);
+                if (!is_null($currentNode)) {
                     $parentNodes = $currentNode->getParents();
                 } else {
                     $parentNodes = array();
@@ -120,10 +127,10 @@ class PageMenuAdaptor implements MenuAdaptorInterface
                 $menuitem->setInternalname($child->getTitle());
                 $menuitem->setParent($parent);
                 $menuitem->setRole('page');
-                $menuitem->setWeight($child->getNodeTranslation()->getWeight()); 
-                
+                $menuitem->setWeight($child->getNodeTranslation()->getWeight());
+
                 if (isset($currentNode) && stripos($request->attributes->get('_route'), $menuitem->getRoute()) === 0) {
-                    if ($currentNode->getId() == $child->getId()) {
+                    if ($currentNode->getId()== $child->getId()) {
                         $menuitem->setActive(true);
                     } else {
                         foreach ($parentNodes as $parentNode) {
@@ -134,17 +141,17 @@ class PageMenuAdaptor implements MenuAdaptorInterface
                         }
                     }
                 }
-                $children[] = $menuitem;              
+                $children[] = $menuitem;
             }
         }
     }
-    
+
     public function compare($menuItem1 , $menuItem2){
         if($menuItem1->getWeight() == $menuItem2->getWeight()){
             return 0;
         }else {
-            return ($menuItem1->getWeight() < $menuItem2->getWeight())? 1 : -1; 
+            return ($menuItem1->getWeight() < $menuItem2->getWeight())? 1 : -1;
         }
     }
-    
+
 }

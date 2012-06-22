@@ -30,6 +30,11 @@ class NodeMenu {
         $this->permission = $permission;
         $tempNode = $currentNode;
 
+        $permissionManager = $container->get('kunstmaan_admin.permissionmanager');
+        $this->user = $this->container->get('security.context')->getToken()->getUser();
+
+        $this->user = $permissionManager->getCurrentUser($this->user, $this->em);
+
         //Breadcrumb
         $nodeBreadCrumb = array();
         while($tempNode){
@@ -38,7 +43,7 @@ class NodeMenu {
         }
         $parentNodeMenuItem = null;
         foreach($nodeBreadCrumb as $nodeBreadCrumbItem){
-        	$nodeTranslation = $nodeBreadCrumbItem->getNodeTranslation($lang, $this->includeoffline);
+            $nodeTranslation = $this->em->getRepository('KunstmaanAdminNodeBundle:NodeTranslation')->getFor($nodeBreadCrumbItem, $this->lang, $this->user, $permission, $this->includeoffline);
         	if(!is_null($nodeTranslation)){
         		$nodeMenuItem = new NodeMenuItem($this->em, $nodeBreadCrumbItem, $nodeTranslation, $lang, $parentNodeMenuItem, $this);
         		$this->breadCrumb[] = $nodeMenuItem;
@@ -46,15 +51,12 @@ class NodeMenu {
         	}
         }
 
-        $permissionManager = $container->get('kunstmaan_admin.permissionmanager');
-        $this->user = $this->container->get('security.context')->getToken()->getUser();
 
-        $this->user = $permissionManager->getCurrentUser($this->user, $this->em);
 
         //topNodes
         $topNodes = $this->em->getRepository('KunstmaanAdminNodeBundle:Node')->getTopNodes($this->lang, $this->user, $permission, $includehiddenfromnav);
         foreach($topNodes as $topNode){
-        	$nodeTranslation = $topNode->getNodeTranslation($lang, $this->includeoffline);
+            $nodeTranslation = $this->em->getRepository('KunstmaanAdminNodeBundle:NodeTranslation')->getFor($topNode, $this->lang, $this->user, $permission, $this->includeoffline);
         	if(!is_null($nodeTranslation)){
 	        	if(sizeof($this->breadCrumb)>0 && $this->breadCrumb[0]->getNode()->getId() == $topNode->getId()){
 	        		$this->topNodeMenuItems[] = $this->breadCrumb[0];
@@ -165,12 +167,12 @@ class NodeMenu {
     public function isIncludeOffline(){
     	return $this->includeoffline;
     }
-    
+
     public function getPermission()
     {
         return $this->permission;
     }
-    
+
     public function getUser()
     {
         return $this->user;

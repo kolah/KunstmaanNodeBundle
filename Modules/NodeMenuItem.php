@@ -21,7 +21,7 @@ class NodeMenuItem
     /**
      * @param FactoryInterface $factory
      */
-    public function __construct($em, Node $node, NodeTranslation $nodeTranslation, $lang, $parent, $menu)
+    public function __construct($em, Node $node, NodeTranslation $nodeTranslation, $lang, NodeMenuItem $parent = null, NodeMenu $menu)
     {
         $this->em = $em;
         $this->node = $node;
@@ -79,7 +79,7 @@ class NodeMenuItem
     public function getParent(){
     	return $this->parent;
     }
-    
+
     public function getParents()
     {
         $parent = $this->getParent();
@@ -94,11 +94,10 @@ class NodeMenuItem
     public function getChildren($includehiddenfromnav = TRUE){
     	if(is_null($this->lazyChildren)){
     		$this->lazyChildren = array();
-    		//$children = $this->node->getChildren();
     		$NodeRepo = $this->em->getRepository('KunstmaanAdminNodeBundle:Node');
     		$children = $NodeRepo->getChildNodes($this->node->getId(), $this->lang, $this->menu->getUser(), $this->menu->getPermission(), true);
     		foreach($children as $child){
-    			$nodeTranslation = $child->getNodeTranslation($this->lang, $this->menu->isIncludeOffline());
+    		    $nodeTranslation = $this->em->getRepository('KunstmaanAdminNodeBundle:NodeTranslation')->getFor($child, $this->lang, $this->menu->getUser(), $this->menu->getPermission(), $this->menu->isIncludeOffline());
     			if(!is_null($nodeTranslation)){
     				$this->lazyChildren[] = new NodeMenuItem($this->em, $child, $nodeTranslation, $this->lang, $this, $this->menu);
     			}
@@ -114,7 +113,7 @@ class NodeMenuItem
     }
 
     public function getPage(){
-    	return $this->getNodeTranslation()->getRef($this->em);
+    	return $this->getNodeTranslation()->getPublicNodeVersion()->getRef($this->em);
     }
 
     public function getActive(){
