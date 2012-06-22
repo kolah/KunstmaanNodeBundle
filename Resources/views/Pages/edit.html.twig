@@ -125,7 +125,7 @@
           {% else %}
               <input onClick="isEdited=false" type="submit" class="btn primary" name="save" value="{{ 'form.save' | trans }}">
               <input onClick="isEdited=false" type="submit" class="btn" name="saveasdraft" value="{{ 'form.saveasdraft' | trans }}">
-              <a class="btn" href="{{ path('_slug', { 'slug': nodemenuCurrent.slug }) }}" target="_blank">Preview</a>
+              <a class="btn" href="{{ path('_slug', { 'url': nodemenuCurrent.url }) }}" target="_blank">Preview</a>
               {% if pagePossibleChildPages is not empty %}<button data-controls-modal="add-subpage-modal" data-backdrop="true" class="btn">Add subpage</button>{% endif %}
               <button onClick="oldEdited = isEdited; isEdited=false" data-controls-modal="delete-page-modal" data-backdrop="true" class="btn danger">Delete</button>
           {% endif %}
@@ -141,7 +141,7 @@
             {% else %}
               <input onClick="isEdited=false" type="submit" class="btn primary" name="save" value="{{ 'form.save' | trans }}">
               <input onClick="isEdited=false" type="submit" class="btn" name="saveasdraft" value="{{ 'form.saveasdraft' | trans }}">
-              <a class="btn" href="{{ path('_slug', { 'slug': nodemenuCurrent.slug }) }}" target="_blank">Preview</a>
+              <a class="btn" href="{{ path('_slug', { 'url': nodemenuCurrent.url }) }}" target="_blank">Preview</a>
               {% if pagePossibleChildPages is not empty %}<button data-controls-modal="add-subpage-modal" data-backdrop="true" class="btn">Add subpage</button>{% endif %}
               <button onClick="oldEdited = isEdited; isEdited=false" data-controls-modal="delete-page-modal" data-backdrop="true" class="btn danger">Delete</button>
             {% endif %}
@@ -229,32 +229,34 @@
             <input type="hidden" name="currenttab" id="currenttab" value="{{ currenttab }}">
             {% for pagepartadmin in pagepartadmins %}
                 {% set pagepartstab = 'pageparts'~loop.index %}
+
                 <div class="{% if currenttab == pagepartstab %}active{% endif %} tab-pane" id="pageparts{{ loop.index }}">
-                    <div id="properties">
-                            <div id="prop_wrp">
-                                <div class="input_prop">
-                                    {{ form_widget(form.main) }}
-                                </div>
-                                <div class="input_prop">
-                                    {{ form_widget(form.node) }}
-                                </div>
-                                <div class="input_prop">
-                                    {{ form_widget(form.nodetranslation) }}
-                                </div>
-                               
-                            </div>
-                    </div>
-                    {% for key, extraform in form %}
-                        {% if key != 'main' and key == pagepartadmin.context %}
-                            <div id="properties">
+                    {% if loop.index == 1 %}
+                        <div id="properties">
                                 <div id="prop_wrp">
                                     <div class="input_prop">
-                                         {{ form_widget(extraform) }}
+                                        {{ form_widget(form.main) }}
+                                    </div>
+                                    <div class="input_prop">
+                                        {{ form_widget(form.node) }}
+                                    </div>
+                                    <div class="input_prop">
+                                        {{ form_widget(form.nodetranslation) }}
                                     </div>
                                 </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
+                        </div>
+                        {% for key, extraform in form %}
+                            {% if key != 'main' and key == pagepartadmin.context %}
+                                <div id="properties">
+                                    <div id="prop_wrp">
+                                        <div class="input_prop">
+                                             {{ form_widget(extraform) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                     {{ pagepartadmin_widget(pagepartadmin, form) }}
                 </div>
             {% else %}
@@ -320,6 +322,18 @@
                         </div>
                         <div class="input_prop">
                                 {{ form_row(seoform.metarevised) }}
+                        </div>
+                        <div class="input_prop">
+                            {{ form_row(seoform.ogType) }}
+                        </div>
+                        <div class="input_prop">
+                            {{ form_row(seoform.ogTitle) }}
+                        </div>
+                        <div class="input_prop">
+                            {{ form_row(seoform.ogDescription) }}
+                        </div>
+                        <div class="input_prop">
+                            {{ form_row(seoform.ogImage) }}
                         </div>
                         <div class="input_prop">
                                 {{ form_row(seoform.extraMetadata) }}
